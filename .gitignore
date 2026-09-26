@@ -1,0 +1,29 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+
+# Build artefacts
+build/
+dist/
+lambda_package/
+*.zip
+
+# IDE
+.idea/
+.vscode/
+
+# Secrets / credentials
+*.pem
+*.key
+credentials
