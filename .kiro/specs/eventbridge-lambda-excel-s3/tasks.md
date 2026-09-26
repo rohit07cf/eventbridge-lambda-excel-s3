@@ -277,28 +277,28 @@ Create the build script that produces the deployable Lambda ZIP artefact.
 
 Establish the Terraform project and provision the S3 bucket.
 
-- [ ] Create `terraform/providers.tf` declaring:
+- [x] Create `terraform/providers.tf` declaring:
   - Terraform version constraint (e.g. `required_version = ">= 1.5"`).
   - The `hashicorp/aws` provider with a version constraint (e.g. `~> 5.0`).
   - The `aws` provider block referencing `var.aws_region`.
-- [ ] Create `terraform/variables.tf` with declarations (type + description + default
+- [x] Create `terraform/variables.tf` with declarations (type + description + default
   where applicable) for:
   `aws_region`, `environment`, `project_name`, `schedule_expression`,
   `lambda_memory_size`, `lambda_timeout`.
   (At this phase, only `aws_region`, `environment`, and `project_name` need to be
   present; remaining variables will be referenced as later phases add resources.)
-- [ ] Create `terraform/main.tf` with a `locals` block defining a `name_prefix`
+- [x] Create `terraform/main.tf` with a `locals` block defining a `name_prefix`
   local: `"${var.project_name}-${var.environment}"` for consistent resource naming.
-- [ ] Create `terraform/s3.tf` with an `aws_s3_bucket` resource named `reports`:
+- [x] Create `terraform/s3.tf` with an `aws_s3_bucket` resource named `reports`:
   - Terraform logical name: `reports` (referenced as `aws_s3_bucket.reports` elsewhere).
   - `bucket` set to `"${local.name_prefix}-reports"` (must be globally unique).
   - A `tags` map including at least `Project` and `Environment`.
-- [ ] Add an `aws_s3_bucket_public_access_block` resource in `terraform/s3.tf`:
+- [x] Add an `aws_s3_bucket_public_access_block` resource in `terraform/s3.tf`:
   - `bucket` referencing `aws_s3_bucket.reports.id`.
   - All four blocking settings set to `true`.
-- [ ] Run `terraform init` inside `terraform/` and confirm it succeeds.
-- [ ] Run `terraform fmt -recursive terraform/` and confirm no formatting errors.
-- [ ] Run `terraform validate` inside `terraform/` and confirm no validation errors.
+- [x] Run `terraform init` inside `terraform/` and confirm it succeeds.
+- [x] Run `terraform fmt -recursive terraform/` and confirm no formatting errors.
+- [x] Run `terraform validate` inside `terraform/` and confirm no validation errors.
 
 **Verification checkpoint:** `terraform validate` returns "Success! The configuration is valid."
 
@@ -308,13 +308,13 @@ Establish the Terraform project and provision the S3 bucket.
 
 Create the Lambda execution role with least-privilege permissions.
 
-- [ ] Create `terraform/iam.tf`.
-- [ ] Add an `aws_iam_role` resource named `lambda_exec` for the Lambda execution role:
+- [x] Create `terraform/iam.tf`.
+- [x] Add an `aws_iam_role` resource named `lambda_exec` for the Lambda execution role:
   - Terraform logical name: `lambda_exec` (referenced as `aws_iam_role.lambda_exec` elsewhere).
   - `name`: `"${local.name_prefix}-lambda-role"`.
   - Assume-role policy granting `sts:AssumeRole` to `lambda.amazonaws.com` only.
   - Tags.
-- [ ] Add an `aws_iam_role_policy` (inline policy) resource:
+- [x] Add an `aws_iam_role_policy` (inline policy) resource:
   - Name: `"${local.name_prefix}-lambda-policy"`.
   - Two statements:
     1. CloudWatch Logs: `logs:CreateLogGroup`, `logs:CreateLogStream`,
@@ -322,8 +322,8 @@ Create the Lambda execution role with least-privilege permissions.
     2. S3 PutObject: `s3:PutObject` scoped to
        `"${aws_s3_bucket.reports.arn}/processed/*"`.
   - No wildcard actions or resources.
-- [ ] Run `terraform validate` and confirm no errors.
-- [ ] Run `terraform plan` and review that IAM resources look correct (no unexpected
+- [x] Run `terraform validate` and confirm no errors.
+- [x] Run `terraform plan` and review that IAM resources look correct (no unexpected
   wildcards in the diff).
 
 **Verification checkpoint:** `terraform plan` shows the IAM role and policy with narrowly scoped permissions.
@@ -335,16 +335,16 @@ Create the Lambda execution role with least-privilege permissions.
 Define the Lambda function resource and wire it to the IAM role, S3 bucket, and
 deployment package.
 
-- [ ] Add `schedule_expression`, `lambda_memory_size`, and `lambda_timeout` variable
+- [x] Add `schedule_expression`, `lambda_memory_size`, and `lambda_timeout` variable
   declarations to `terraform/variables.tf` if not already present (with defaults
   `"rate(5 minutes)"`, `256`, and `30` respectively).
-- [ ] Create `terraform/lambda.tf`.
-- [ ] Add a `data "archive_file"` resource (or use a direct `filename` attribute)
+- [x] Create `terraform/lambda.tf`.
+- [x] Add a `data "archive_file"` resource (or use a direct `filename` attribute)
   referencing the packaging script output: `../lambda.zip` relative to the Terraform
   directory. Use `source_code_hash = filebase64sha256(...)` for change detection.
   - If using `data "archive_file"`, confirm the ZIP already exists before running
     `terraform plan` (run `scripts/package_lambda.sh` first).
-- [ ] Add an `aws_lambda_function` resource named `cost_report`:
+- [x] Add an `aws_lambda_function` resource named `cost_report`:
   - Terraform logical name: `cost_report` (referenced as `aws_lambda_function.cost_report` elsewhere).
   - `function_name`: `"${local.name_prefix}-cost-report"`.
   - `role`: `aws_iam_role.lambda_exec.arn`.
@@ -355,9 +355,9 @@ deployment package.
   - `timeout`: `var.lambda_timeout`.
   - `environment.variables`: `{ OUTPUT_BUCKET = aws_s3_bucket.reports.bucket }`.
   - Tags.
-- [ ] Run `terraform fmt -recursive terraform/` to check formatting.
-- [ ] Run `terraform validate` and confirm no errors.
-- [ ] Run `terraform plan` and verify the Lambda function appears with correct
+- [x] Run `terraform fmt -recursive terraform/` to check formatting.
+- [x] Run `terraform validate` and confirm no errors.
+- [x] Run `terraform plan` and verify the Lambda function appears with correct
   runtime, memory, timeout, and environment variable.
 
 **Verification checkpoint:** `terraform plan` shows Lambda function with `python3.12` runtime and `OUTPUT_BUCKET` environment variable pointing to the S3 bucket.
@@ -368,27 +368,27 @@ deployment package.
 
 Configure the EventBridge schedule rule, Lambda target, and invocation permission.
 
-- [ ] Create `terraform/eventbridge.tf`.
-- [ ] Add an `aws_cloudwatch_event_rule` resource named `schedule`:
+- [x] Create `terraform/eventbridge.tf`.
+- [x] Add an `aws_cloudwatch_event_rule` resource named `schedule`:
   - Terraform logical name: `schedule` (referenced as `aws_cloudwatch_event_rule.schedule` elsewhere).
   - `name`: `"${local.name_prefix}-schedule"`.
   - `description`: A meaningful description (e.g. `"Trigger cost report Lambda every 5 minutes"`).
   - `schedule_expression`: `var.schedule_expression`.
   - `state`: `"ENABLED"`.
   - Tags.
-- [ ] Add an `aws_cloudwatch_event_target` resource:
+- [x] Add an `aws_cloudwatch_event_target` resource:
   - `rule`: referencing the rule above.
   - `target_id`: `"CostReportLambdaTarget"`.
   - `arn`: `aws_lambda_function.cost_report.arn`.
-- [ ] Add an `aws_lambda_permission` resource:
+- [x] Add an `aws_lambda_permission` resource:
   - `statement_id`: `"AllowEventBridgeInvoke"`.
   - `action`: `"lambda:InvokeFunction"`.
   - `function_name`: `aws_lambda_function.cost_report.function_name`.
   - `principal`: `"events.amazonaws.com"`.
   - `source_arn`: `aws_cloudwatch_event_rule.schedule.arn`.
-- [ ] Run `terraform fmt -recursive terraform/`.
-- [ ] Run `terraform validate` and confirm no errors.
-- [ ] Run `terraform plan` and verify EventBridge rule shows `rate(5 minutes)` as
+- [x] Run `terraform fmt -recursive terraform/`.
+- [x] Run `terraform validate` and confirm no errors.
+- [x] Run `terraform plan` and verify EventBridge rule shows `rate(5 minutes)` as
   the schedule expression.
 
 **Verification checkpoint:** `terraform plan` shows EventBridge rule with `schedule_expression = "rate(5 minutes)"` and the Lambda permission scoped to the rule ARN.
@@ -399,18 +399,18 @@ Configure the EventBridge schedule rule, Lambda target, and invocation permissio
 
 Expose the key infrastructure identifiers as Terraform outputs.
 
-- [ ] Create `terraform/outputs.tf`.
-- [ ] Add output `s3_bucket_name`:
+- [x] Create `terraform/outputs.tf`.
+- [x] Add output `s3_bucket_name`:
   - `value`: `aws_s3_bucket.reports.bucket`.
   - `description`: `"Name of the S3 bucket that receives Excel cost reports"`.
-- [ ] Add output `lambda_function_name`:
+- [x] Add output `lambda_function_name`:
   - `value`: `aws_lambda_function.cost_report.function_name`.
   - `description`: `"Name of the Lambda function that generates cost reports"`.
-- [ ] Add output `eventbridge_rule_name`:
+- [x] Add output `eventbridge_rule_name`:
   - `value`: `aws_cloudwatch_event_rule.schedule.name`.
   - `description`: `"Name of the EventBridge scheduled rule"`.
-- [ ] Run `terraform validate` and confirm no errors.
-- [ ] Run `terraform plan` and confirm all three outputs appear in the plan output.
+- [x] Run `terraform validate` and confirm no errors.
+- [x] Run `terraform plan` and confirm all three outputs appear in the plan output.
 
 **Verification checkpoint:** `terraform plan` lists three outputs with correct sources and descriptions.
 
@@ -421,71 +421,71 @@ Expose the key infrastructure identifiers as Terraform outputs.
 Write the project README so that any engineer can set up, build, deploy, and verify
 the system from scratch.
 
-- [ ] Open (or create) `README.md` and structure it with the following sections:
-- [ ] **Architecture** — describe the EventBridge → Lambda → Excel → S3 flow with
+- [x] Open (or create) `README.md` and structure it with the following sections:
+- [x] **Architecture** — describe the EventBridge → Lambda → Excel → S3 flow with
   a brief text diagram; reference `design.md` for full detail.
-- [ ] **Repository Structure** — show the directory tree from `design.md` Section 13.
-- [ ] **Prerequisites** — list required tools with minimum versions:
+- [x] **Repository Structure** — show the directory tree from `design.md` Section 13.
+- [x] **Prerequisites** — list required tools with minimum versions:
   Python 3.12+, pip, Terraform 1.5+, AWS CLI v2, bash.
-- [ ] **Installing Python dependencies (local development)**:
+- [x] **Installing Python dependencies (local development)**:
   ```bash
   python -m venv .venv
   source .venv/bin/activate
   pip install -r requirements-dev.txt
   ```
-- [ ] **Running unit tests**:
+- [x] **Running unit tests**:
   ```bash
   pytest tests/ -v
   ```
-- [ ] **Packaging the Lambda**:
+- [x] **Packaging the Lambda**:
   ```bash
   bash scripts/package_lambda.sh
   ```
-- [ ] **Terraform: initialise**:
+- [x] **Terraform: initialise**:
   ```bash
   cd terraform
   terraform init
   ```
-- [ ] **Terraform: format check**:
+- [x] **Terraform: format check**:
   ```bash
   terraform fmt -recursive
   ```
-- [ ] **Terraform: validate**:
+- [x] **Terraform: validate**:
   ```bash
   terraform validate
   ```
-- [ ] **Terraform: plan**:
+- [x] **Terraform: plan**:
   ```bash
   terraform plan -var="environment=dev" -var="project_name=cost-report"
   ```
-- [ ] **Terraform: apply**:
+- [x] **Terraform: apply**:
   ```bash
   terraform apply -var="environment=dev" -var="project_name=cost-report"
   ```
-- [ ] **Manually invoking the Lambda**:
+- [x] **Manually invoking the Lambda**:
   ```bash
   aws lambda invoke \
     --function-name <lambda_function_name output> \
     response.json
   cat response.json
   ```
-- [ ] **Verifying S3 output**:
+- [x] **Verifying S3 output**:
   ```bash
   aws s3 ls s3://<s3_bucket_name output>/processed/
   ```
-- [ ] **Checking CloudWatch Logs**:
+- [x] **Checking CloudWatch Logs**:
   ```bash
   aws logs tail /aws/lambda/<lambda_function_name output> --follow
   ```
-- [ ] **Verifying EventBridge execution** — explain how to check the EventBridge
+- [x] **Verifying EventBridge execution** — explain how to check the EventBridge
   rule metrics in the AWS console or via CloudWatch metrics.
-- [ ] **Terraform: destroy**:
+- [x] **Terraform: destroy**:
   ```bash
   terraform destroy -var="environment=dev" -var="project_name=cost-report"
   ```
-- [ ] **Configuration reference** — table of all Terraform variables and Lambda
+- [x] **Configuration reference** — table of all Terraform variables and Lambda
   environment variables.
-- [ ] Review the README for accuracy against the actual implementation before
+- [x] Review the README for accuracy against the actual implementation before
   marking this task complete.
 
 **Verification checkpoint:** README is readable top-to-bottom; all commands are syntactically correct and reference the correct resource names.
@@ -498,38 +498,38 @@ Final end-to-end validation pass before the implementation is considered complet
 
 ### Code Quality
 
-- [ ] Run `pytest tests/ -v` and confirm all 8 tests pass with 0 failures.
-- [ ] Run `terraform fmt -check -recursive terraform/` and confirm no formatting
+- [x] Run `pytest tests/ -v` and confirm all 8 tests pass with 0 failures.
+- [x] Run `terraform fmt -check -recursive terraform/` and confirm no formatting
   issues are reported.
-- [ ] Run `terraform validate` inside `terraform/` and confirm "The configuration
+- [x] Run `terraform validate` inside `terraform/` and confirm "The configuration
   is valid."
-- [ ] Run `terraform plan -var="environment=dev" -var="project_name=cost-report"`
+- [x] Run `terraform plan -var="environment=dev" -var="project_name=cost-report"`
   and review the output for unexpected resources, missing variables, or policy errors.
 
 ### Packaging Verification
 
-- [ ] Re-run `bash scripts/package_lambda.sh` from a clean state (delete
+- [x] Re-run `bash scripts/package_lambda.sh` from a clean state (delete
   `lambda_package/` and `lambda.zip` first) and confirm the package is rebuilt
   successfully.
-- [ ] Confirm `lambda.zip` contains `lambda_function.py`, `data_provider.py`,
+- [x] Confirm `lambda.zip` contains `lambda_function.py`, `data_provider.py`,
   `excel_generator.py`, and the `openpyxl` package directory.
 
 ### Requirement Cross-Check
 
-- [ ] **EventBridge → Lambda permission** — verify `aws_lambda_permission` resource
+- [x] **EventBridge → Lambda permission** — verify `aws_lambda_permission` resource
   exists in `terraform/eventbridge.tf` with `principal = "events.amazonaws.com"` and
   `source_arn` scoped to the EventBridge rule ARN.
-- [ ] **Lambda → S3 permission** — verify the IAM policy in `terraform/iam.tf`
+- [x] **Lambda → S3 permission** — verify the IAM policy in `terraform/iam.tf`
   grants `s3:PutObject` only, scoped to `processed/*` on the target bucket.
-- [ ] **CloudWatch logging** — verify the IAM policy grants `logs:CreateLogGroup`,
+- [x] **CloudWatch logging** — verify the IAM policy grants `logs:CreateLogGroup`,
   `logs:CreateLogStream`, `logs:PutLogEvents` and that the Lambda logger is
   configured in `lambda_function.py`.
-- [ ] **Lambda environment variables** — verify `OUTPUT_BUCKET` is set in the
+- [x] **Lambda environment variables** — verify `OUTPUT_BUCKET` is set in the
   `aws_lambda_function` resource `environment` block and that `lambda_function.py`
   reads it via `os.environ`.
-- [ ] **Lambda dependency packaging** — verify `openpyxl` is present in `lambda.zip`
+- [x] **Lambda dependency packaging** — verify `openpyxl` is present in `lambda.zip`
   and not in the Lambda runtime by default.
-- [ ] **Excel output correctness** — manually run the Excel generator against the
+- [x] **Excel output correctness** — manually run the Excel generator against the
   data provider and open the resulting file (or inspect it via openpyxl) to confirm:
   - Worksheet named `Cost Report`.
   - 11 columns present.
@@ -537,12 +537,12 @@ Final end-to-end validation pass before the implementation is considered complet
   - Bold headers.
   - Freeze panes at A2.
   - Numeric formatting on cost columns.
-- [ ] **5-minute EventBridge schedule** — verify `schedule_expression` defaults to
+- [x] **5-minute EventBridge schedule** — verify `schedule_expression` defaults to
   `"rate(5 minutes)"` in `terraform/variables.tf` and that the EventBridge rule
   resource references `var.schedule_expression` rather than a hardcoded string.
-- [ ] **No unnecessary AWS services** — confirm no API Gateway, DynamoDB, Step
+- [x] **No unnecessary AWS services** — confirm no API Gateway, DynamoDB, Step
   Functions, ECS, Glue, RDS, SNS, or SQS resources appear anywhere in `terraform/`.
-- [ ] **No hardcoded infrastructure values in Python** — grep the `src/` directory
+- [x] **No hardcoded infrastructure values in Python** — grep the `src/` directory
   for any S3 bucket name literals or hardcoded region strings:
   ```bash
   grep -rn "us-east\|s3\.amazonaws\|arn:aws" src/
